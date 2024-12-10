@@ -24,6 +24,7 @@ class WaveEquation:
         return (self.A**2) / x
 
 
+@dataclass
 class WaveSourceEmitter:
     P : Vector2D        # Position of wave emitter
     W : WaveEquation    # Equation of wave to emit
