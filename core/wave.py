@@ -13,3 +13,14 @@ class WaveEquation:
     q : float       # Starting phase of the wave (ϕ)
     t : Literal["COS_WAVE", "SIN_WAVE"] # type
 
+
+class WaveSourceEmitter:
+    P : ...             # Position of wave emitter
+    W : WaveEquation    # Equation of wave to emit
+    d : float           # intensity falloff
+
+    def calculateDisplacement(self, at:...) -> float:
+        ...
+
+    def calculateIntensity(self, at:...) -> float:
+        ...
