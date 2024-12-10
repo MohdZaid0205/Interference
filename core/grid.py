@@ -12,7 +12,8 @@ class Grid[Member]:
     def set[T](self, i: int, j: int, value: Optional[Member] = None, modifier: Optional[Callable[[Member],T]] = None) -> None:
         if modifier is not None:
             self.__grid[i][j] = modifier(value)
-        self.__grid[i][j] = value
+        else:
+            self.__grid[i][j] = value
 
     def get[T](self, i: int, j: int, specifier: Optional[Callable[[Member],T]] = None) -> Union[T, Member]:
         if specifier is not None:
