@@ -5,9 +5,9 @@ name: Python application
 
 on:
   push:
-    branches: [ "setting-up-workflows" ]
+    branches: [ "master" ]
   pull_request:
-    branches: [ "setting-up-workflows" ]
+    branches: [ "master" ]
 
 permissions:
   contents: read
