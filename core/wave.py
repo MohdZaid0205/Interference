@@ -1,8 +1,12 @@
 from dataclasses import dataclass
-from typing import Literal
+from math import sin, cos
+from typing import Callable
 
-COS_WAVE:str = "COS_WAVE"
-SIN_WAVE:str = "SIN_WAVE"
+from core.vector import Vector2D
+
+# definitions for types of waves.
+COS_WAVE:str = cos
+SIN_WAVE:str = sin
 
 
 @dataclass
@@ -11,16 +15,27 @@ class WaveEquation:
     k : float       # Spatial frequency (k)
     w : float       # Rotational speed (ω)
     q : float       # Starting phase of the wave (ϕ)
-    t : Literal["COS_WAVE", "SIN_WAVE"] # type
+    t : Callable[[float], float] # type
+
+    def displacement(self, x:float, t:float) -> float:
+        return self.A*self.t(self.w*t - self.k*x + self.q)
+    
+    def intensity(self, x:float) -> float:
+        return (self.A**2) / x
 
 
 class WaveSourceEmitter:
-    P : ...             # Position of wave emitter
+    P : Vector2D        # Position of wave emitter
     W : WaveEquation    # Equation of wave to emit
     d : float           # intensity falloff
 
-    def calculateDisplacement(self, at:...) -> float:
-        ...
+    def calculateDisplacement(self, at:Vector2D, t:float) -> float:
+        return self.W.displacement(
+            x=Vector2D.distance(self.P, at),
+            t=t
+        )
 
-    def calculateIntensity(self, at:...) -> float:
-        ...
+    def calculateIntensity(self, at:Vector2D) -> float:
+        return self.W.intensity(
+            x=Vector2D.distance(self.P, at)
+        )/self.d
