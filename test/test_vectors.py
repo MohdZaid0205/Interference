@@ -34,3 +34,15 @@ class TestVector2D:
         distance = Vector2D.distance(v1, v2)
         assert abs(distance - expected_distance) < 1e-9, \
             f"Expected distance={expected_distance}, got distance={distance}"
+
+    @pytest.mark.parametrize(
+        "v1, v2, expected_distance",
+        [
+            (Vector2D(     0,      0), Vector2D(   1000,    1000),    1414.213), # Large values
+            (Vector2D(123456, 654321), Vector2D(-123456, -654321), 1331731.737), # Extremely large values
+        ]
+    )
+    def test_large_values(self, v1, v2, expected_distance):
+        distance = Vector2D.distance(v1, v2)
+        assert abs(distance - expected_distance) < 1e-3, \
+            f"Expected distance={expected_distance}, got distance={distance}"
