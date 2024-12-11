@@ -19,3 +19,17 @@ class TestWaveEquation:
         displacement = wave.displacement(x, t)
         assert abs(displacement - expected_displacement) < 1e-9, \
             f"Expected displacement={expected_displacement}, got {displacement}"
+
+    @pytest.mark.parametrize(
+        "A, x, expected_intensity",
+        [
+            (1.0, 1.0, 1.0),  # Standard case
+            (2.0, 2.0, 2.0),  # Double amplitude, double x
+            (3.0, 1.0, 9.0),  # Triple amplitude
+        ]
+    )
+    def test_intensity(self, A, x, expected_intensity):
+        wave = WaveEquation(A=A, k=0, w=0, q=0, t=SIN_WAVE)
+        intensity = wave.intensity(x)
+        assert abs(intensity - expected_intensity) < 1e-9, \
+            f"Expected intensity={expected_intensity}, got {intensity}"
