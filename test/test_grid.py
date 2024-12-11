@@ -72,3 +72,30 @@ class TestGridFunctionality:
         expected = specifier(value)
         assert grid_.get(i, j, specifier=specifier) == expected, f"Expected specified value {expected} at ({i=}, {j=}), got {grid_.get(i, j, specifier=specifier)}"
 
+    @pytest.mark.parametrize(
+        argnames="m, n, i, j",
+        argvalues=[
+            (1, 1,  1, 0),  # Accessing out-of-bounds in a 1x1 grid.
+            (2, 2,  1, 2),  # Accessing a column out of bounds.
+            (3, 3,  3, 3),  # Accessing bottom-right corner outside bounds.
+            (4, 4,  0, 5),  # Accessing column greater than grid size.
+        ]
+    )
+    def test_out_of_bounds_access(self, m, n, i, j):
+        grid_: Grid[int] = Grid[int](m, n, default=0)
+        with pytest.raises(IndexError):
+            grid_.get(i, j)
+
+    @pytest.mark.parametrize(
+        argnames="m, n, i, j, value",
+        argvalues=[
+            (1, 1,  1, 0,  42),  # Setting out-of-bounds in a 1x1 grid.
+            (2, 2,  1, 2,  99),  # Setting value in an invalid column.
+            (3, 3,  3, 3,  -5),  # Setting value at bottom-right corner outside bounds.
+            (4, 4,  0, 5, 100),  # Setting value in a column greater than grid size.
+        ]
+    )
+    def test_out_of_bounds_set(self, m, n, i, j, value):
+        grid_: Grid[int] = Grid[int](m, n, default=0)
+        with pytest.raises(IndexError):
+            grid_.set(i, j, value)
