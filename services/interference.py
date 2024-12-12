@@ -11,7 +11,7 @@ class Interference:
         self.grid = grid
         self.sorc = sources
 
-    def __next__[T](self, provider:Callable[[Particle], T]) -> Generator[T, None, None]:
+    def __iter__[T](self, provider:Callable[[Particle], T]=None) -> Generator[T, None, None]:
         for i in range(self.grid.m):
             for j in range(self.grid.n):
                 yield (i, j, self.grid.get(i, j, provider))
@@ -20,6 +20,8 @@ class Interference:
         for i in range(self.grid.m):
             for j in range(self.grid.n):
                 particle = self.grid.get(i, j)
+                if particle is None:
+                    continue
                 particle.d = 0
                 for source in self.sorc:
                     particle.d += source.calculateDisplacement(particle.P, time)
