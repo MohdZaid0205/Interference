@@ -12,9 +12,12 @@ def iGridInitHelper(m:int, n:int, sources:list[WaveSourceEmitter]) -> Grid:
             net_displacement = 0
             net_intensity = 0
 
+            if net_position in [s.P for s in sources]:
+                continue
+
             for source in sources:
                 net_displacement += source.calculateDisplacement(at=net_position, t=0)
-                net_intensity += source.calculateIntensity(at=net_position, t=0)
+                net_intensity += source.calculateIntensity(at=net_position)
 
             particle:Particle = Particle(net_position,net_displacement,net_intensity)
             _grid.set(i, j, particle)
