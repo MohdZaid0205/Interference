@@ -82,36 +82,36 @@ if __name__ == "__main__":
         clear_background(BLACK)
 
         for i, j, particle in interferenceManager:
-                if particle is None:
-                    draw_rectangle(
-                        P_X + offset_x * j,
-                        P_Y + offset_y * i,
-                        CELL_WIDTH,
-                        CELL_HEIGHT,
-                        (0, 0, 0, 255)
-                    )
-                    continue
-
-                x_norm = (particle.d + max_amp) / (2 * max_amp)
-
-                # Color Calculation
-                if x_norm <= 0.5:  # Blue to White
-                    r = int(255 * x_norm * 2)
-                    g = int(255 * x_norm * 2)
-                    b = 255
-                else:  # White to Red
-                    r = 255
-                    g = int(255 * (2 - 2 * x_norm))
-                    b = int(255 * (2 - 2 * x_norm))
-
-                # Draw particle (if not a speaker position)
+            if particle is None:
                 draw_rectangle(
                     P_X + offset_x * j,
                     P_Y + offset_y * i,
                     CELL_WIDTH,
                     CELL_HEIGHT,
-                    (r, g, b, min(255, max(0, int(particle.i*(4/n)))))
+                    (0, 0, 0, 255)
                 )
+                continue
+
+            x_norm = (particle.d + max_amp) / (2 * max_amp)
+
+            # Color Calculation
+            if x_norm <= 0.5:  # Blue to White
+                r = int(255 * x_norm * 2)
+                g = int(255 * x_norm * 2)
+                b = 255
+            else:  # White to Red
+                r = 255
+                g = int(255 * (2 - 2 * x_norm))
+                b = int(255 * (2 - 2 * x_norm))
+
+            # Draw particle (if not a speaker position)
+            draw_rectangle(
+                P_X + offset_x * j,
+                P_Y + offset_y * i,
+                CELL_WIDTH,
+                CELL_HEIGHT,
+                (r, g, b, min(255, max(0, int(particle.i*(4/n)))))
+            )
 
         draw_text(str(get_fps()), 5, 5, 10, WHITE)
 
