@@ -1,72 +1,67 @@
-from core.vector import Vector2D  # Assuming this is already implemented
+from core.vector import Vector2D
 from core.wave import WaveEquation, WaveSourceEmitter, COS_WAVE, SIN_WAVE
-from math import sin, cos
 
-# Test for WaveEquation Displacement method
-def test_wave_equation_displacement_sin_wave():
-    wave = WaveEquation(A=1.0, k=2.0, w=3.0, q=0.0, t=SIN_WAVE)
-    displacement = wave.displacement(x=1.0, t=1.0)
-    expected_displacement = 1.0 * sin(3.0 * 1.0 - 2.0 * 1.0 + 0.0)  # sin(1)
-    assert abs(displacement - expected_displacement) < 1e-6, f"Expected displacement {expected_displacement}, got {displacement}"
+from math import sin, cos, pi, sqrt
+import pytest
 
-def test_wave_equation_displacement_cos_wave():
-    wave = WaveEquation(A=1.0, k=2.0, w=3.0, q=0.0, t=COS_WAVE)
-    displacement = wave.displacement(x=1.0, t=1.0)
-    expected_displacement = 1.0 * cos(3.0 * 1.0 - 2.0 * 1.0 + 0.0)  # cos(1)
-    assert abs(displacement - expected_displacement) < 1e-6, f"Expected displacement {expected_displacement}, got {displacement}"
 
-def test_wave_equation_intensity():
-    wave = WaveEquation(A=2.0, k=2.0, w=3.0, q=0.0, t=SIN_WAVE)
-    intensity = wave.intensity(x=5.0)
-    expected_intensity = (2.0 ** 2) / 5.0  # (A^2) / x
-    assert abs(intensity - expected_intensity) < 1e-6, f"Expected intensity {expected_intensity}, got {intensity}"
+class TestWaveEquation:
 
-# Test for WaveSourceEmitter calculateDisplacement method
-def test_wave_source_emitter_calculate_displacement():
-    wave = WaveEquation(A=1.0, k=2.0, w=3.0, q=0.0, t=SIN_WAVE)
-    emitter = WaveSourceEmitter(P=Vector2D(0.0, 0.0), W=wave, d=2.0)
-    target_position = Vector2D(3.0, 4.0)
-    displacement = emitter.calculateDisplacement(at=target_position, t=1.0)
+    @pytest.mark.parametrize(
+        "A, k, w, q, t_func, x, t, expected_displacement",
+        [
+            (1.0, 2.0, pi    , 0.0   , SIN_WAVE, 0.0, 1.0, sin(pi)),  # Basic sine wave
+            (1.0, 0.0, 0.0   , 0.0   , COS_WAVE, 0.0, 0.0, 1.0    ),  # Static wave
+        ]
+    )
+    def test_displacement(self, A, k, w, q, t_func, x, t, expected_displacement):
+        wave = WaveEquation(A=A, k=k, w=w, q=q, t=t_func)
+        displacement = wave.displacement(x, t)
+        assert abs(displacement - expected_displacement) < 1e-9, \
+            f"Expected displacement={expected_displacement}, got {displacement}"
 
-    # Distance from emitter to target position (Pythagoras theorem)
-    distance = Vector2D.distance(Vector2D(0.0, 0.0), target_position)
-    
-    # Expected displacement calculation
-    expected_displacement = wave.displacement(x=distance, t=1.0)
-    assert abs(displacement - expected_displacement) < 1e-6, f"Expected displacement {expected_displacement}, got {displacement}"
+    @pytest.mark.parametrize(
+        "A, x, expected_intensity",
+        [
+            (1.0, 1.0, 1.0),  # Standard case
+            (2.0, 2.0, 2.0),  # Double amplitude, double x
+            (3.0, 1.0, 9.0),  # Triple amplitude
+        ]
+    )
+    def test_intensity(self, A, x, expected_intensity):
+        wave = WaveEquation(A=A, k=0, w=0, q=0, t=SIN_WAVE)
+        intensity = wave.intensity(x)
+        assert abs(intensity - expected_intensity) < 1e-9, \
+            f"Expected intensity={expected_intensity}, got {intensity}"
+        
 
-# Test for WaveSourceEmitter calculateIntensity method
-def test_wave_source_emitter_calculate_intensity():
-    wave = WaveEquation(A=2.0, k=1.0, w=3.0, q=0.0, t=COS_WAVE)
-    emitter = WaveSourceEmitter(P=Vector2D(0.0, 0.0), W=wave, d=2.0)
-    target_position = Vector2D(1.0, 1.0)  # Distance sqrt(1^2 + 1^2) = sqrt(2)
-    
-    # Calculate intensity
-    intensity = emitter.calculateIntensity(at=target_position)
-    
-    # Expected intensity
-    distance = Vector2D.distance(Vector2D(0.0, 0.0), target_position)
-    expected_intensity = wave.intensity(x=distance) / emitter.d
-    assert abs(intensity - expected_intensity) < 1e-6, f"Expected intensity {expected_intensity}, got {intensity}"
+class TestWaveSourceEmitter:
+    """Test suite for the WaveSourceEmitter class."""
 
-# Test WaveSourceEmitter with a non-zero intensity falloff
-def test_wave_source_emitter_intensity_falloff():
-    wave = WaveEquation(A=1.0, k=2.0, w=3.0, q=0.0, t=SIN_WAVE)
-    emitter = WaveSourceEmitter(P=Vector2D(0.0, 0.0), W=wave, d=4.0)  # Increased intensity falloff
-    target_position = Vector2D(2.0, 0.0)  # 2 units away from the emitter
-    
-    # Calculate intensity with falloff
-    intensity = emitter.calculateIntensity(at=target_position)
-    
-    # Expected intensity considering falloff (distance = 2)
-    distance = Vector2D.distance(Vector2D(0.0, 0.0), target_position)
-    expected_intensity = wave.intensity(x=distance) / 4.0
-    assert abs(intensity - expected_intensity) < 1e-6, f"Expected intensity {expected_intensity}, got {intensity}"
+    @pytest.mark.parametrize(
+        "source_position, wave, target_position, t, expected_displacement",
+        [
+            (Vector2D(0, 0), WaveEquation(1, 1, pi, 0, SIN_WAVE), Vector2D(1, 1), 1,
+             sin(pi - sqrt(2))),  # Sine wave displacement
+            (Vector2D(0, 0), WaveEquation(2, 0, pi / 2, pi / 2, COS_WAVE), Vector2D(0, 2), 2,
+             2 * cos(pi / 2)),  # Cosine wave with no spatial frequency
+        ]
+    )
+    def test_calculate_displacement(self, source_position, wave, target_position, t, expected_displacement):
+        emitter = WaveSourceEmitter(P=source_position, W=wave, d=1.0)
+        displacement = emitter.calculateDisplacement(at=target_position, t=t)
+        assert abs(displacement - expected_displacement) < 1e-9, \
+            f"Expected displacement={expected_displacement}, got {displacement}"
 
-# Test Vector2D distance method (assumed to be implemented)
-def test_vector2d_distance():
-    v1 = Vector2D(0.0, 0.0)
-    v2 = Vector2D(3.0, 4.0)
-    distance = Vector2D.distance(v1, v2)
-    expected_distance = 5.0  # sqrt(3^2 + 4^2)
-    assert abs(distance - expected_distance) < 1e-6, f"Expected distance {expected_distance}, got {distance}"
+    @pytest.mark.parametrize(
+        "source_position, wave, target_position, falloff, expected_intensity",
+        [
+            (Vector2D(0, 0), WaveEquation(1, 0, 0, 0, SIN_WAVE), Vector2D(3, 4), 2.0, 0.1 ),  # Intensity with falloff
+            (Vector2D(0, 0), WaveEquation(2, 0, 0, 0, COS_WAVE), Vector2D(6, 8), 1.0, 0.4 ),  # Double amplitude
+        ]
+    )
+    def test_calculate_intensity(self, source_position, wave, target_position, falloff, expected_intensity):
+        emitter = WaveSourceEmitter(P=source_position, W=wave, d=falloff)
+        intensity = emitter.calculateIntensity(at=target_position)
+        assert abs(intensity - expected_intensity) < 1e-9, \
+            f"Expected intensity={expected_intensity}, got {intensity}"

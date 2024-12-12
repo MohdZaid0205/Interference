@@ -1,59 +1,101 @@
 from core.grid import Grid
+
 import pytest
+from typing import Optional
 
 
-def test_grid_initialization():
-    grid = Grid[int](3, 3, default=0)
-    for i in range(3):
-        for j in range(3):
-            assert grid.get(i, j) == 0, f"[Error] Default value mismatch at ({i}, {j}): Expected 0, Got {grid.get(i, j)}"
+class TestGridFunctionality:
 
-def test_grid_set_without_modifier():
-    grid = Grid[int](2, 2, default=0)
-    grid.set(0, 0, 5)
-    grid.set(1, 1, 10)
+    @pytest.mark.parametrize(
+        argnames="m, n, default, expected",
+        argvalues=[
+            (0, 0, None, 0),  # Empty grid with no dimensions.
+            (1, 1, 0000, 1),  # Single cell grid with default value 0.
+            (2, 3, None, 6),  # Rectangular grid with 6 cells and default value None.
+            (3, 3, 0000, 9),  # Square grid with 9 cells and default value 0.
+        ]
+    )
+    def test_initialization(self, m, n, default, expected):
+        grid_: Grid[Optional[int]] = Grid[Optional[int]](m, n, default)
+        count = 0
+        for i in range(m):
+            for j in range(n):
+                try:
+                    assert grid_.get(i, j) == default, f"Expected default value {default} at ({i=}, {j=})"
+                    count += 1
+                except IndexError:
+                    assert False, f"Grid ({m=}, {n=}) but ({i=}, {j=}) doesn't exist."
+        else:
+            assert count == expected, f"Grid ({m=}, {n=}) expected dimensions={expected} but counted dimensions={count}"
 
-    assert grid.get(0, 0) == 5, f"[Error] Value mismatch at (0, 0): Expected 5, Got {grid.get(0, 0)}"
-    assert grid.get(1, 1) == 10, f"[Error] Value mismatch at (1, 1): Expected 10, Got {grid.get(1, 1)}"
-    assert grid.get(0, 1) == 0, f"[Error] Default value mismatch at (0, 1): Expected 0, Got {grid.get(0, 1)}"
+    @pytest.mark.parametrize(
+        argnames="m, n, i, j, value",
+        argvalues=[
+            (1, 1, 0, 0,  42),  # Setting single value in a 1x1 grid.
+            (2, 2, 1, 1,  99),  # Setting a value in a small square grid.
+            (3, 3, 0, 2,  -5),  # Negative value in a rectangular grid.
+            (4, 4, 3, 3, 100),  # Large positive value in bottom-right cell of 4x4 grid.
+        ]
+    )
+    def test_set_and_get(self, m, n, i, j, value):
+        grid_: Grid[int] = Grid[int](m, n, default=0)
+        grid_.set(i, j, value)
+        assert grid_.get(i, j) == value, f"Expected {value} at ({i=}, {j=}), got {grid_.get(i, j)}"
 
-def test_grid_set_with_modifier():
-    grid = Grid[int](2, 2, default=0)
-    grid.set(0, 0, 5, modifier=lambda x: x * 2)
-    grid.set(1, 1, 3, modifier=lambda x: x + 7)
+    @pytest.mark.parametrize(
+        argnames="m, n, i, j, value, modifier",
+        argvalues=[
+            (2, 2, 0, 0, 10, lambda x: x * 2  ), # Modifier doubles the value.
+            (3, 3, 2, 2,  5, lambda x: x + 3  ), # Modifier adds 3 to the value.
+            (4, 4, 1, 1, -1, lambda x: abs(x) ), # Modifier takes absolute value.
+            (5, 5, 4, 4,  7, lambda x: x ** 2 ), # Modifier squares the value.
+        ]
+    )
+    def test_set_with_modifier(self, m, n, i, j, value, modifier):
+        grid_: Grid[int] = Grid[int](m, n, default=0)
+        grid_.set(i, j, value, modifier=modifier)
+        expected = modifier(value)
+        assert grid_.get(i, j) == expected, f"Expected modified value {expected} at ({i=}, {j=}), got {grid_.get(i, j)}"
 
-    assert grid.get(1, 1) == 10, f"[Error] Modifier value mismatch at (1, 1): Expected 10, Got {grid.get(1, 1)}"
-    assert grid.get(0, 0) == 10, f"[Error] Modifier value mismatch at (0, 0): Expected 10, Got {grid.get(0, 0)}"
+    @pytest.mark.parametrize(
+        argnames="m, n, i, j, value, specifier",
+        argvalues=[
+            (2, 2, 0, 0, 10, lambda x: x * 2  ), # Specifier doubles the value on retrieval.
+            (3, 3, 2, 2,  5, lambda x: x + 3  ), # Specifier adds 3 to the value on retrieval.
+            (4, 4, 1, 1, -1, lambda x: abs(x) ), # Specifier returns absolute value.
+            (5, 5, 4, 4,  7, lambda x: x ** 2 ), # Specifier squares the value on retrieval.
+        ]
+    )
+    def test_get_with_specifier(self, m, n, i, j, value, specifier):
+        grid_: Grid[int] = Grid[int](m, n, default=0)
+        grid_.set(i, j, value)
+        expected = specifier(value)
+        assert grid_.get(i, j, specifier=specifier) == expected, f"Expected specified value {expected} at ({i=}, {j=}), got {grid_.get(i, j, specifier=specifier)}"
 
-def test_grid_get_with_specifier():
-    grid = Grid[str](2, 2, default="hello")
-    grid.set(0, 0, "world")
-    length_specifier = lambda x: len(x)
+    @pytest.mark.parametrize(
+        argnames="m, n, i, j",
+        argvalues=[
+            (1, 1,  1, 0),  # Accessing out-of-bounds in a 1x1 grid.
+            (2, 2,  1, 2),  # Accessing a column out of bounds.
+            (3, 3,  3, 3),  # Accessing bottom-right corner outside bounds.
+            (4, 4,  0, 5),  # Accessing column greater than grid size.
+        ]
+    )
+    def test_out_of_bounds_access(self, m, n, i, j):
+        grid_: Grid[int] = Grid[int](m, n, default=0)
+        with pytest.raises(IndexError):
+            grid_.get(i, j)
 
-    assert grid.get(0, 0, specifier=length_specifier) == 5, \
-        f"[Error] Specifier mismatch at (0, 0): Expected 5, Got {grid.get(0, 0, specifier=length_specifier)}"
-    assert grid.get(1, 1, specifier=length_specifier) == 5, \
-        f"[Error] Specifier mismatch at (1, 1): Expected 5, Got {grid.get(1, 1, specifier=length_specifier)}"
-
-def test_grid_get_without_specifier():
-    grid = Grid[float](2, 2, default=1.5)
-    grid.set(0, 0, 3.0)
-
-    assert grid.get(0, 0) == 3.0, f"[Error] Value mismatch at (0, 0): Expected 3.0, Got {grid.get(0, 0)}"
-    assert grid.get(1, 1) == 1.5, f"[Error] Default value mismatch at (1, 1): Expected 1.5, Got {grid.get(1, 1)}"
-
-def test_edge_cases():
-    grid = Grid[int](0, 0)
-    
-    with pytest.raises(IndexError):
-        grid.set(0, 0, 1)
-    
-    with pytest.raises(IndexError):
-        grid.get(0, 0)
-
-def test_large_grid():
-    grid = Grid[int](1000, 1000, default=-1)
-    grid.set(999, 999, 42)
-
-    assert grid.get(999, 999) == 42, f"[Error] Value mismatch at (999, 999): Expected 42, Got {grid.get(999, 999)}"
-    assert grid.get(0, 0) == -1, f"[Error] Default value mismatch at (0, 0): Expected -1, Got {grid.get(0, 0)}"
+    @pytest.mark.parametrize(
+        argnames="m, n, i, j, value",
+        argvalues=[
+            (1, 1,  1, 0,  42),  # Setting out-of-bounds in a 1x1 grid.
+            (2, 2,  1, 2,  99),  # Setting value in an invalid column.
+            (3, 3,  3, 3,  -5),  # Setting value at bottom-right corner outside bounds.
+            (4, 4,  0, 5, 100),  # Setting value in a column greater than grid size.
+        ]
+    )
+    def test_out_of_bounds_set(self, m, n, i, j, value):
+        grid_: Grid[int] = Grid[int](m, n, default=0)
+        with pytest.raises(IndexError):
+            grid_.set(i, j, value)
